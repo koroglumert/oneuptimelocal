@@ -1,0 +1,116 @@
+# Images are pushed to both Docker Hub and Github Container Registry. If you're using Github Container Registry, you can change the image tag to use the Github Container Registry.
+# For example, if you want to use the image from Github Container Registry, you can change the image tag from oneuptime/dashboard:latest to ghcr.io/oneuptime/dashboard:latest
+
+version: '3.7'
+
+services:
+
+    haraka:
+        extends:
+            file: ./docker-compose.base.yml
+            service: haraka
+    
+    redis:
+        extends:
+            file: ./docker-compose.base.yml
+            service: redis
+
+    clickhouse:
+        extends:
+            file: ./docker-compose.base.yml
+            service: clickhouse
+
+    postgres:
+        ports:
+          - "5400:5432" # for access to postgres for backups. If you don't need backup, you can comment this line out to make it more secure.
+        extends:
+            file: ./docker-compose.base.yml
+            service: postgres
+
+    
+    otel-collector:
+        image:  oneuptime/otel-collector:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: otel-collector
+        
+    accounts:
+        image:  oneuptime/accounts:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: accounts
+       
+
+    dashboard:
+        image:  oneuptime/dashboard:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: dashboard
+        
+    admin-dashboard:
+        image:  oneuptime/admin-dashboard:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: admin-dashboard
+
+    status-page:
+        image:  oneuptime/status-page:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: status-page
+            
+        
+
+    app:
+        image:  oneuptime/app:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: app
+        
+
+    workflow:
+        image:  oneuptime/workflow:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: workflow
+        
+    
+    workers:
+        image:  oneuptime/workers:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: workers
+        
+    
+
+    probe-1:   
+        image:  oneuptime/probe:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: probe-1
+        
+    probe-2:
+        image:  oneuptime/probe:${APP_TAG}   
+        extends:
+            file: ./docker-compose.base.yml
+            service: probe-2
+
+    ingestor:
+        image:  oneuptime/ingestor:${APP_TAG}
+        extends:
+            file: ./docker-compose.base.yml
+            service: ingestor
+
+    ingress:
+       image:  oneuptime/nginx:${APP_TAG}
+       extends:
+            file: ./docker-compose.base.yml
+            service: ingress
+
+volumes:
+    postgres:
+    clickhouse:
+
+networks:
+  oneuptime:
+    driver: bridge

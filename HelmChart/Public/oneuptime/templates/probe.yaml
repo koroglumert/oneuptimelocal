@@ -1,0 +1,62 @@
+{{- range $key, $val := $.Values.probes }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ printf "%s-%s" $.Release.Name (printf "probe-%s" $key)  }}
+  namespace: {{ $.Release.Namespace }}
+  labels:
+    app: {{ printf "%s-%s" $.Release.Name (printf "probe-%s" $key)  }}
+    app.kubernetes.io/part-of: oneuptime
+    app.kubernetes.io/managed-by: Helm
+    appname: oneuptime
+    date: "{{ now | unixEpoch }}"
+spec:
+  selector:
+    matchLabels:
+      app: {{ printf "%s-%s" $.Release.Name (printf "probe-%s" $key)  }}
+  replicas: {{ $.Values.deployment.replicaCount }}
+  template:
+    metadata:
+      labels:
+        app: {{ printf "%s-%s" $.Release.Name (printf "probe-%s" $key)  }}
+        date: "{{ now | unixEpoch }}"
+    spec:
+      containers:
+        - image: {{ printf "%s/%s/%s:%s" $.Values.image.registry $.Values.image.repository "probe" $.Values.image.tag }}
+          name: {{ printf "%s-%s" $.Release.Name (printf "probe-%s" $key)  }}
+          imagePullPolicy: {{ $.Values.image.pullPolicy }}
+          env:
+            - name: PORT
+              value: {{ $.Values.port.probe | squote }}
+            - name: INGESTOR_URL
+              value: http://{{ $.Release.Name }}-ingestor.{{ $.Release.Namespace }}.svc.{{ $.Values.global.clusterDomain }}:{{ $.Values.port.ingestor }}
+            - name: PROBE_NAME
+              value: {{ $val.name }}
+            - name: PROBE_DESCRIPTION
+              value: {{ $val.description }}
+            - name: PROBE_MONITORING_WORKERS
+              value: {{ $val.monitoringWorkers | squote }}
+            - name: PROBE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-%s" $.Release.Name "secrets"  }}
+                  key: {{printf "probe-%s" $key}}
+            - name: PROBE_MONITOR_FETCH_LIMIT
+              value: {{ $val.monitorFetchLimit | squote }}
+            - name: ONEUPTIME_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ printf "%s-%s" $.Release.Name "secrets"  }}
+                  key: oneuptime-secret
+          
+      restartPolicy: {{ $.Values.image.restartPolicy }}
+---
+
+
+# OneUptime probe autoscaler
+{{- $probeAutoScalerArgs := dict "ServiceName" (printf "probe-%s" $key) "Release" $.Release "Values" $.Values -}}
+{{- include "oneuptime.autoscaler" $probeAutoScalerArgs }}
+---
+
+{{- end }}
+
